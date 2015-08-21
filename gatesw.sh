@@ -72,21 +72,21 @@ case "$1" in
         # deploy bridge
         add_bridge vnic3
         add_bridge vnic4
+        # deploy Gatesw1
+        add_host Gatesw1
+        add_link_for_wan vnic3 2001 Gatesw1 30.1.0.2/24
+        add_link_for_wan vnic4 2001 Gatesw1 30.1.0.3/24
+        add_gw Gatesw1 30.1.0.4
         # deploy Gatesw2
         add_host Gatesw2
-        add_link_for_wan vnic3 2001 Gatesw2 30.200.102.2/24
-        add_link_for_wan vnic4 2001 Gatesw2 30.200.102.3/24
-        add_gw Gatesw2 30.200.102.4
-        # deploy Gatesw7
-        add_host Gatesw7
-        add_link_for_wan vnic3 2002 Gatesw7 30.200.107.2/24
-        add_link_for_wan vnic4 2002 Gatesw7 30.200.107.3/24
-        add_gw Gatesw7 30.200.107.4
-        # deploy Gatesw9
-        add_host Gatesw9
-        add_link_for_wan vnic3 2003 Gatesw9 30.200.109.2/24
-        add_link_for_wan vnic4 2003 Gatesw9 30.200.109.3/24
-        add_gw Gatesw9 30.200.109.4
+        add_link_for_wan vnic3 2002 Gatesw2 30.2.0.2/24
+        add_link_for_wan vnic4 2002 Gatesw2 30.2.0.3/24
+        add_gw Gatesw2 30.2.0.4
+        # deploy Gatesw3
+        add_host Gatesw3
+        add_link_for_wan vnic3 2003 Gatesw3 30.3.0.2/24
+        add_link_for_wan vnic4 2003 Gatesw3 30.3.0.3/24
+        add_gw Gatesw3 30.3.0.4
         # add bridge interface
         sudo brctl addif vnic3 veth_2
         sudo brctl addif vnic4 veth_4
