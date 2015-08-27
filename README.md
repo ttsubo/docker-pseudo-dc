@@ -34,6 +34,9 @@ Githubよりリポジトリ情報を取得します.
 ルート権限でdockerパッケージ類をインストールします.
 
 	$ cd docker-pseudo-dc
+	$ sudo apt-get install python-dev
+	$ sudo apt-get install python-paramiko
+	$ sudo pip install -r requirements.txt
 	$ sudo python ./pseudo-dc.py install
 
 
@@ -88,6 +91,8 @@ Dockerコンテナ実行状況を確認します.
 Linuxブリッジ動作状況を確認します.
 
 	$ brctl show
+
+	(...snip)
 	br3610-1		8000.0643928767a7	no		veth0pl17505
 	br3610-2		8000.1a12463629fa	no		veth1pl17505
 	br3610-3		8000.5a681fb7fd91	no		veth2pl17505
