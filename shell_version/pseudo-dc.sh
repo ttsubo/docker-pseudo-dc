@@ -15,7 +15,7 @@ add_bridge() {
 
 add_host() {
     local host_name=$1
-    docker run --name $host_name --privileged -h $host_name -itd ubuntu /bin/bash
+    docker run --name $host_name --privileged=True --net=none -h $host_name -itd ubuntu /bin/bash
     add_netns $host_name
 }
 
@@ -70,31 +70,45 @@ del_all_netns() {
 case "$1" in
     start)
         # deploy bridge
-        add_bridge vnic3
-        add_bridge vnic4
-        # deploy Gatesw1
-        add_host Gatesw1
-        add_link_for_wan vnic3 2001 Gatesw1 30.1.0.2/24
-        add_link_for_wan vnic4 2001 Gatesw1 30.1.0.3/24
-        add_gw Gatesw1 30.1.0.4
-        # deploy Gatesw2
-        add_host Gatesw2
-        add_link_for_wan vnic3 2002 Gatesw2 30.2.0.2/24
-        add_link_for_wan vnic4 2002 Gatesw2 30.2.0.3/24
-        add_gw Gatesw2 30.2.0.4
-        # deploy Gatesw3
-        add_host Gatesw3
-        add_link_for_wan vnic3 2003 Gatesw3 30.3.0.2/24
-        add_link_for_wan vnic4 2003 Gatesw3 30.3.0.3/24
-        add_gw Gatesw3 30.3.0.4
+        add_bridge vnic1
+        add_bridge vnic2
+        # deploy Customer202
+        add_host Customer202
+        add_link_for_wan vnic1 2804 Customer202 30.200.112.4/26
+        add_link_for_wan vnic2 2804 Customer202 30.200.112.5/26
+        add_link_for_tenant br101 eth1 Customer202 40.200.112.1/29
+        add_link_for_tenant br102 eth2 Customer202 40.201.112.1/29
+        add_gw Customer202 30.200.112.1
+        # deploy Customer207
+        add_host Customer207
+        add_link_for_wan vnic1 2805 Customer207 30.200.117.4/26
+        add_link_for_wan vnic2 2805 Customer207 30.200.117.5/26
+        add_link_for_tenant br103 eth1 Customer207 40.200.117.1/29
+        add_link_for_tenant br104 eth2 Customer207 40.201.117.1/29
+        add_gw Customer207 30.200.117.1
+        # deploy Customer9
+        add_host Customer209
+        add_link_for_wan vnic1 3881 Customer209 30.200.119.4/26
+        add_link_for_wan vnic2 3881 Customer209 30.200.119.5/26
+        add_link_for_tenant br105 eth1 Customer209 40.200.119.1/29
+        add_link_for_tenant br106 eth2 Customer209 40.201.119.1/29
+        add_gw Customer209 30.200.119.1
+
+
         # add bridge interface
-        sudo brctl addif vnic3 veth_2
-        sudo brctl addif vnic4 veth_4
+        sudo brctl addif vnic1 eth2
+        sudo brctl addif vnic2 eth3
 	;;
     stop)
         del_all_netns
-        delete_bridge vnic3
-        delete_bridge vnic4
+	delete_bridge br101
+	delete_bridge br102
+	delete_bridge br103
+	delete_bridge br104
+	delete_bridge br105
+	delete_bridge br106
+        delete_bridge vnic1
+        delete_bridge vnic2
 	;;
     install)
 

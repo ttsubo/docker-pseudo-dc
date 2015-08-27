@@ -1,11 +1,31 @@
 import os.path
 from fabric.api import local
 from netaddr.ip import IPNetwork, IPAddress
+from optparse import OptionParser
+import sys
+
+host_serial_number = 0
+
+def install_docker_and_tools():
+    print "start install packages of test environment."
+    local("apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys "
+          "36A1D7869245C8950F966E92D8576A8BA88D21E9", capture=True)
+    local('sh -c "echo deb https://get.docker.io/ubuntu docker main > /etc/apt/sources.list.d/docker.list"',
+          capture=True)
+    local("apt-get update", capture=True)
+    local("apt-get install -y --force-yes lxc-docker-1.7.0 bridge-utils tcpdump", capture=True)
+    local("ln -sf /usr/bin/docker.io /usr/local/bin/docker", capture=True)
+    local("gpasswd -a `whoami` docker", capture=True)
+    local("wget https://raw.github.com/jpetazzo/pipework/master/pipework -O /usr/local/bin/pipework",
+          capture=True)
+    local("chmod 755 /usr/local/bin/pipework", capture=True)
+    local("docker pull ubuntu:14.04.2", capture=True)
+    local("mkdir -p /var/run/netns", capture=True)
 
 class Container(object):
     def __init__(self, name, vlan, bridges, conn_ip, tenant_ip, tenant_num):
         self.name = name
-        self.image = 'ubuntu'
+        self.image = 'ubuntu:14.04.2'
         self.vlan = vlan
         self.bridges = bridges
         self.conn_ip = conn_ip
@@ -145,18 +165,65 @@ def get_containers():
         return []
     return output.split('\n')
 
+def create_prefix(bridges, vlan_init, vfw_prefix_init, local_prefix_init, num):
+    global host_serial_number
+    hosts = []
+
+    for current in range(1, num+1):
+        host_serial_number += 1
+        if current == 1:
+            vlan = vlan_init
+            vfw_prefix = vfw_prefix_init
+            local_prefix = local_prefix_init
+        else:
+            vlan += 1
+            vfw_subnet = IPNetwork(vfw_prefix)
+            vfw_ipaddr = vfw_subnet.ip + 256 * 256
+            vfw_mask = vfw_subnet.netmask
+            vfw_prefix = IPNetwork(str(vfw_ipaddr) + '/' + str(vfw_mask))
+
+            local_subnet = IPNetwork(local_prefix)
+            local_ipaddr = local_subnet.ip + 256 * 256
+            local_mask = local_subnet.netmask
+            local_prefix = IPNetwork(str(local_ipaddr) + '/' + str(local_mask))
+
+        host = "host_%03d_%03d"%(host_serial_number, vlan)
+        hostname = Container(host, vlan, bridges, vfw_prefix, local_prefix, 5)
+        hosts.append(hostname)
+
+    [host.run() for host in hosts]
+
+def create_tenant():
+    vnic1 = Bridge(name='vnic1')
+    vnic2 = Bridge(name='vnic2')
+    bridges = ['vnic1', 'vnic2']
+
+    create_prefix(bridges, 2001, '130.1.0.0/24', '140.1.1.0/24', 396)
+    create_prefix(bridges, 2601, '132.89.0.0/24', '142.89.1.0/24', 60)
+    create_prefix(bridges, 2901, '133.133.0.0/24', '143.133.1.0/24', 102)
+    create_prefix(bridges, 3501, '135.221.0.0/24', '145.221.1.0/24', 30)
+    create_prefix(bridges, 3600, '136.64.0.0/24', '146.64.1.0/24', 12)
+
+    local("brctl addif vnic1 eth2", capture=True)
+    local("brctl addif vnic2 eth3", capture=True)
+
 
 
 if __name__ == '__main__':
+    parser = OptionParser(usage="usage: %prog [install|start|stop|")
+    options, args = parser.parse_args()
 
-    vnic1 = Bridge(name='vnic1')
-    vnic2 = Bridge(name='vnic2')
+    if len(args) == 0:
+        sys.exit(1)
+    elif args[0] == 'install':
+        install_docker_and_tools()
+    elif args[0] == 'start':
+        create_tenant()
+    elif args[0] == 'stop':
+        for ctn in get_containers():
+            local("docker rm -f {0}".format(ctn), capture=True)
 
-    bridges = ['vnic1', 'vnic2']
+        for bridge in get_bridges():
+            local("ip link set down dev {0}".format(bridge), capture=True)
+            local("ip link delete {0} type bridge".format(bridge), capture=True)
 
-    host1 = Container('host1', 2001, bridges, '30.1.0.0/24', '40.1.0.0/24', 5)
-    host2 = Container('host2', 2002, bridges, '30.2.0.0/24', '40.2.0.0/24', 5)
-    host3 = Container('host3', 2003, bridges, '30.3.0.0/24', '40.3.0.0/24', 5)
-    hosts = [host1, host2, host3]
-
-    [host.run() for host in hosts]
