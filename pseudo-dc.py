@@ -15,7 +15,6 @@ def install_docker_and_tools():
     local("apt-get update", capture=True)
     local("apt-get install -y --force-yes lxc-docker-1.7.0 bridge-utils tcpdump", capture=True)
     local("ln -sf /usr/bin/docker.io /usr/local/bin/docker", capture=True)
-    local("gpasswd -a `whoami` docker", capture=True)
     local("wget https://raw.github.com/jpetazzo/pipework/master/pipework -O /usr/local/bin/pipework",
           capture=True)
     local("chmod 755 /usr/local/bin/pipework", capture=True)

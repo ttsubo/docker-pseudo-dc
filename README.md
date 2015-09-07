@@ -38,6 +38,7 @@ Githubよりリポジトリ情報を取得します.
 	$ sudo apt-get install python-paramiko
 	$ sudo pip install -r requirements.txt
 	$ sudo python ./pseudo-dc.py install
+	$ sudo gpasswd -a `whoami` docker
 
 
 ### インストール結果確認
